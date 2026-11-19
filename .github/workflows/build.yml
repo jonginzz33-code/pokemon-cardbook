@@ -2,9 +2,11 @@ name: Build
 
 # 카드 도감 앱 빌드
 #  - 모든 브랜치: 바로 설치해 볼 APK → Actions 실행 화면 Artifacts 'Cardbook-apk'
-#  - main 에 올리거나 Actions 탭에서 손으로 실행하면 (비밀값이 있을 때만):
-#      ① 업로드 키로 서명한 스토어용 AAB → Releases 'latest' 에 cardbook-play-<번호>.aab
-#      ② 플레이 콘솔 테스트 트랙에 자동 업로드 (기본 internal · 저장소 변수 PLAY_TRACK 로 바꿈, 예: alpha)
+#  - main 에 올리거나 Actions 탭에서 손으로 실행하면:
+#      ① 폰에서 바로 받는 APK → Releases 'latest' 의 cardbook.apk (지금은 이걸로 직접 설치해서 테스트)
+#      ② 업로드 키로 서명한 스토어용 AAB → 같은 곳에 cardbook-play-<번호>.aab (비밀값 PLAY_KEY_PASS 있을 때)
+#      ③ 플레이 콘솔 자동 업로드 — 꺼져 있음. 스토어에 올릴 때가 되면 저장소 변수 PLAY_UPLOAD 를 true 로
+#         (기본 internal 트랙 · 저장소 변수 PLAY_TRACK 로 바꿈, 예: alpha)
 #  비밀값: PLAY_KEY_PASS (업로드 키 비밀번호) · PLAY_SERVICE_ACCOUNT_JSON (플레이 콘솔 서비스 계정)
 #  버전 번호(versionCode) = 이 워크플로 실행 번호라서 올릴 때마다 자동으로 커져요.
 on:
@@ -83,17 +85,26 @@ jobs:
           name: Cardbook-apk
           path: android/app/build/outputs/apk/release/*.apk
 
-      - name: AAB 를 Releases 에 올리기
-        if: ${{ hashFiles('cardbook-play-*.aab') != '' }}
+      - name: APK 이름 붙이기
+        if: ${{ env.STORE == 'true' }}
+        run: cp android/app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/cardbook.apk"
+
+      - name: Releases 에 올리기 (APK · AAB)
+        if: ${{ env.STORE == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: 카드 도감 (최신 스토어용)
-          files: cardbook-play-*.aab
+          name: 카드 도감 최신판 (빌드 ${{ github.run_number }})
+          body: |
+            폰에서 **cardbook.apk** 를 눌러 받아 설치하세요. (빌드 ${{ github.run_number }})
+            cardbook-play-*.aab 는 나중에 플레이 스토어에 올릴 때 쓰는 파일이에요.
+          files: |
+            cardbook.apk
+            cardbook-play-*.aab
 
       - name: 플레이 콘솔 비밀값 확인
         id: play
-        if: ${{ hashFiles('cardbook-play-*.aab') != '' }}
+        if: ${{ hashFiles('cardbook-play-*.aab') != '' && vars.PLAY_UPLOAD == 'true' }}
         env:
           SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: |

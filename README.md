@@ -59,7 +59,8 @@ npm run typecheck
 | 언제 | 무엇을 |
 | --- | --- |
 | 아무 브랜치에 올릴 때 | APK → Actions 실행 화면 Artifacts `Cardbook-apk` |
-| `main` 에 올리거나 Actions 탭에서 손으로 실행 | 위 + 업로드 키로 서명한 AAB → Releases `latest` + 플레이 콘솔 자동 업로드 |
+| `main` 에 올리거나 Actions 탭에서 손으로 실행 | 위 + Releases `latest` 에 **`cardbook.apk`**(폰에서 바로 설치) + 업로드 키로 서명한 AAB |
+| 저장소 변수 `PLAY_UPLOAD` = `true` 일 때만 | 플레이 콘솔 자동 업로드 (지금은 꺼 둠 — APK 직접 설치로 먼저 테스트) |
 
 - 버전 번호(versionCode)는 워크플로 실행 번호라 올릴 때마다 자동으로 커집니다. 화면에 보이는 버전 이름은 `app.json` 의 `version`.
 - 업로드 키: `keystore/play-upload.p12.enc` (AES-256 · pbkdf2 200000, 별칭 `upload`). 비밀값 `PLAY_KEY_PASS` 로 풀어서 `plugins/withPlaySigning.js` 가 release 빌드에 서명합니다.
