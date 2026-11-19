@@ -20,5 +20,5 @@
 - 빌드 `.github/workflows/build.yml`. 플레이 콘솔 자동 업로드는 저장소 변수 `PLAY_UPLOAD=true` 일 때만 (지금 꺼짐).
 
 ## 메모 (만들어줘 하기 전까지 여기만 정리)
-1. ~~실제 카드 데이터 채우기~~ (v0.4.0에서 함 · 한국판 `scripts/fetch-kr-official.mjs` 공식 사이트 상세 페이지 BS{연도}{세트}{번호} · 일본/영문 `scripts/fetch-tcgdex.mjs` · TCGdex 한국어는 세트 3개만 카드가 있어 안 씀 · TCG Pocket 뺌) — ✅ 2026-11-19 네트워크 허용됨 (클라우드 환경 'pokemon-cardbook': `api.tcgdex.net` · `pokemoncard.co.kr` · `www.pokemoncard.co.kr`). TCGdex 한국어: 세트 95개 · 카드 약 7,931장 (썬&문 SM1 ~ 스칼렛&바이올렛). 빠진 한국판 세트는 공식 사이트(pokemoncard.co.kr/main)로 보충. 일본판 · 영문판은 TCGdex.
+1. ~~실제 카드 데이터 채우기~~ (v0.4.0에서 함 · 한국판 `scripts/fetch-kr-official.mjs` 공식 사이트 상세 페이지 BS{연도}{세트}{번호} · 일본/영문 `scripts/fetch-tcgdex.mjs` · TCGdex 한국어는 세트 3개만 카드가 있어 안 씀 · TCG Pocket 뺌 · 2026-11-19 기준 한국 205세트 17,394장 / 일본 121세트 13,156장 / 영문 20시리즈 21,432장) — ✅ 2026-11-19 네트워크 허용됨 (클라우드 환경 'pokemon-cardbook': `api.tcgdex.net` · `pokemoncard.co.kr` · `www.pokemoncard.co.kr`). TCGdex 한국어: 세트 95개 · 카드 약 7,931장 (썬&문 SM1 ~ 스칼렛&바이올렛). 빠진 한국판 세트는 공식 사이트(pokemoncard.co.kr/main)로 보충. 일본판 · 영문판은 TCGdex.
 2. ~~APK 크기 줄이기~~ (v0.4.0에서 함 · APK 는 arm64-v8a 만, AAB 는 전부)

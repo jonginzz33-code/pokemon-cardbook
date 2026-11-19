@@ -39,17 +39,16 @@
 | `src/components/CardBack.tsx` | `?` 카드 뒷면 (앱 자체 디자인) |
 | `scripts/fetch-tcgdex.mjs` | 전체 카드 목록 수집 스크립트 |
 
-## 카드 데이터 채우기
+## 카드 데이터
 
-지금 들어 있는 데이터는 화면 확인용 샘플입니다(151 세트 앞 12장 등). 전체 목록은 아래 명령으로 만듭니다.
+| 판 | 출처 | 2026-11-19 기준 | 다시 받기 |
+| --- | --- | --- | --- |
+| 한국판 | 포켓몬코리아 공식 카드 검색 상세 페이지 | 205세트 · 17,394장 (DP 2010 ~ MEGA 2026) | `NODE_USE_ENV_PROXY=1 node scripts/fetch-kr-official.mjs` |
+| 일본판 | TCGdex | 121세트 · 13,156장 | `node scripts/fetch-tcgdex.mjs ja` |
+| 영문판 | TCGdex (TCG Pocket 제외) | 21,432장 | `node scripts/fetch-tcgdex.mjs en` |
 
-```bash
-npm run data:tcgdex            # ko, ja, en 모두 (오래 걸림)
-npm run data:tcgdex -- ko      # 한국판만
-```
-
-- **영문판, 일본판:** TCGdex 데이터가 충실합니다.
-- **한국판:** TCGdex에는 스칼렛&바이올렛 시대 위주로 들어 있습니다. 빠진 세트는 포켓몬코리아 공식 카드 검색(pokemoncard.co.kr)을 기준으로 보충해야 합니다. 이 수집기는 아직 만들지 않았습니다.
+- TCGdex 한국어는 카드 목록이 있는 세트가 3개뿐이라 한국판은 공식 사이트를 씁니다. 천천히(동시 6~8개, 요청마다 쉼) 받고, 받은 세트는 `.cache/kr-official/` 에 남겨 다시 돌리면 새 세트만 받습니다.
+- 카드 이미지는 받지 않습니다.
 
 ## 실행과 빌드
 

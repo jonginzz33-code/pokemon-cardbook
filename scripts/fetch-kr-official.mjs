@@ -142,13 +142,14 @@ function seriesOf(set) {
   const c = set.code ?? '';
   const n = set.name;
   if (/프로모/.test(n)) return ['promo', '프로모'];
-  if (/^MEGA/.test(n) || /^M(\d|C|E|[A-Z]?$)/.test(c)) return ['mega', 'MEGA'];
+  if (/MEGA/.test(n) || /^M(\d|C|E|[A-Z]?$)/.test(c)) return ['mega', 'MEGA'];
   if (/스칼렛|바이올렛/.test(n) || /^SV/i.test(c)) return ['sv', '스칼렛&바이올렛'];
   if (/소드|실드/.test(n) || /^S(\d|[A-Z])/.test(c)) return ['swsh', '소드&실드'];
   if (/썬&문|썬 & 문/.test(n) || /^sm/i.test(c)) return ['sm', '썬&문'];
   if (/XY BREAK/.test(n)) return ['xyb', 'XY BREAK'];
   if (/XY/.test(n) || /^xy/i.test(c)) return ['xy', 'XY'];
   if (/BW/.test(n) || /^bw/i.test(c)) return ['bw', 'BW'];
+  if (/DP/.test(n)) return ['dp', 'DP'];
   return ['etc', '기타'];
 }
 
