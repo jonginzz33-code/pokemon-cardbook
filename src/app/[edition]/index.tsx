@@ -58,7 +58,7 @@ export default function EditionScreen() {
               </View>
               <Text style={styles.meta}>
                 {[
-                  set.releaseDate ? `${set.releaseDate} 발매` : null,
+                  set.releaseDate ? `${set.releaseDate} 발매` : set.year ? `${set.year}년` : null,
                   set.officialCount ? `공식 ${set.officialCount}장` : null,
                   `수록 ${set.cards.length}장`,
                 ]

@@ -51,6 +51,8 @@ export interface CardSet {
   code?: string;
   /** YYYY-MM-DD */
   releaseDate?: string;
+  /** 발매일을 모를 때 발매 연도 (한국판 공식 데이터) */
+  year?: number;
   /** 카드에 인쇄된 공식 장수 (예: 165) — 시크릿 카드는 제외 */
   officialCount?: number;
   cards: Card[];

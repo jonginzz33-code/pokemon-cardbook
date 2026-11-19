@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const API = 'https://api.tcgdex.net/v2';
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'editions');
-const CONCURRENCY = 6;
+const CONCURRENCY = 8;
 
 const args = process.argv.slice(2);
 const langs = args.filter((a) => !a.startsWith('--'));
@@ -92,6 +92,8 @@ async function buildEdition(lang) {
   console.log(`\n[${lang}] 시리즈 목록 받는 중…`);
   let seriesList = (await get(`/${lang}/series`)) ?? [];
   if (seriesFilter) seriesList = seriesList.filter((s) => seriesFilter.includes(s.id));
+  // TCG Pocket 은 스마트폰 게임이라 실물 카드 수집에서 뺌
+  seriesList = seriesList.filter((s) => s.id !== 'tcgp');
 
   const series = [];
   for (const s of seriesList) {
@@ -123,7 +125,12 @@ async function buildEdition(lang) {
       sets.push({
         id: set.id,
         name: set.name,
-        ...(set.abbreviation?.official ? { code: set.abbreviation.official } : {}),
+        // 일본판은 세트 ID 자체가 카드에 인쇄된 코드 (예: SV2a)
+        ...(set.abbreviation?.official
+          ? { code: set.abbreviation.official }
+          : lang === 'ja'
+            ? { code: set.id }
+            : {}),
         ...(set.releaseDate ? { releaseDate: set.releaseDate } : {}),
         ...(set.cardCount?.official ? { officialCount: set.cardCount.official } : {}),
         cards,

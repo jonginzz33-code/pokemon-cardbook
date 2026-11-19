@@ -14,11 +14,11 @@
 - 빌드 결과(Actions)를 확인하고, 실패하면 고쳐서 다시 올려요.
 
 ## 구조 메모
-- Expo(React Native) 앱. 화면 `src/app/`, 데이터 `src/data/editions/*.json`(지금은 샘플), 보유 기록 `src/store/collection.tsx`, 사진 `src/store/photos.ts`.
+- Expo(React Native) 앱. 화면 `src/app/`, 데이터 `src/data/editions/*.json` (판별 전체 목록, 처음 쓸 때 불러옴 · 다시 받기: `NODE_USE_ENV_PROXY=1 node scripts/fetch-kr-official.mjs` / `node scripts/fetch-tcgdex.mjs ja en`), 보유 기록 `src/store/collection.tsx`, 사진 `src/store/photos.ts`.
 - 카드 찍어서 넣기 `src/app/scan.tsx` + `src/scan/recognize.ts` (ML Kit 글자 인식, 영문·숫자만).
 - 앱 안 업데이트 `src/update/updater.ts` (APK판만, 스토어용 AAB 는 STORE_BUILD=1 로 꺼짐).
 - 빌드 `.github/workflows/build.yml`. 플레이 콘솔 자동 업로드는 저장소 변수 `PLAY_UPLOAD=true` 일 때만 (지금 꺼짐).
 
 ## 메모 (만들어줘 하기 전까지 여기만 정리)
-1. 실제 카드 데이터 채우기 — ✅ 2026-11-19 네트워크 허용됨 (클라우드 환경 'pokemon-cardbook': `api.tcgdex.net` · `pokemoncard.co.kr` · `www.pokemoncard.co.kr`). TCGdex 한국어: 세트 95개 · 카드 약 7,931장 (썬&문 SM1 ~ 스칼렛&바이올렛). 빠진 한국판 세트는 공식 사이트(pokemoncard.co.kr/main)로 보충. 일본판 · 영문판은 TCGdex.
-2. APK 크기 줄이기 (지금 약 90MB → arm64만 넣으면 절반 이하) — 제안만 함, 사용자 결정 전.
+1. ~~실제 카드 데이터 채우기~~ (v0.4.0에서 함 · 한국판 `scripts/fetch-kr-official.mjs` 공식 사이트 상세 페이지 BS{연도}{세트}{번호} · 일본/영문 `scripts/fetch-tcgdex.mjs` · TCGdex 한국어는 세트 3개만 카드가 있어 안 씀 · TCG Pocket 뺌) — ✅ 2026-11-19 네트워크 허용됨 (클라우드 환경 'pokemon-cardbook': `api.tcgdex.net` · `pokemoncard.co.kr` · `www.pokemoncard.co.kr`). TCGdex 한국어: 세트 95개 · 카드 약 7,931장 (썬&문 SM1 ~ 스칼렛&바이올렛). 빠진 한국판 세트는 공식 사이트(pokemoncard.co.kr/main)로 보충. 일본판 · 영문판은 TCGdex.
+2. ~~APK 크기 줄이기~~ (v0.4.0에서 함 · APK 는 arm64-v8a 만, AAB 는 전부)
