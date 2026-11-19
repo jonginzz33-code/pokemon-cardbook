@@ -20,5 +20,5 @@
 - 빌드 `.github/workflows/build.yml`. 플레이 콘솔 자동 업로드는 저장소 변수 `PLAY_UPLOAD=true` 일 때만 (지금 꺼짐).
 
 ## 메모 (만들어줘 하기 전까지 여기만 정리)
-1. 실제 카드 데이터 채우기 — 이 작업 환경 네트워크 허용(`api.tcgdex.net`, `pokemoncard.co.kr`, `www.pokemoncard.co.kr`) 필요. 사용자가 나중에 설정하기로 함.
+1. 실제 카드 데이터 채우기 — ✅ 2026-11-19 네트워크 허용됨 (클라우드 환경 'pokemon-cardbook': `api.tcgdex.net` · `pokemoncard.co.kr` · `www.pokemoncard.co.kr`). TCGdex 한국어: 세트 95개 · 카드 약 7,931장 (썬&문 SM1 ~ 스칼렛&바이올렛). 빠진 한국판 세트는 공식 사이트(pokemoncard.co.kr/main)로 보충. 일본판 · 영문판은 TCGdex.
 2. APK 크기 줄이기 (지금 약 90MB → arm64만 넣으면 절반 이하) — 제안만 함, 사용자 결정 전.
