@@ -28,6 +28,8 @@ interface CollectionApi {
   coverPhoto: (edition: EditionId, card: Card) => string | undefined;
   setCount: (edition: EditionId, cardId: string, variant: VariantId, count: number) => void;
   setPhoto: (edition: EditionId, cardId: string, variant: VariantId, photo: string | undefined) => void;
+  /** 기록을 통째로 되돌립니다 (스캔 '되돌리기'용). 지금 사진이 되돌릴 기록과 다르면 지웁니다. */
+  restore: (edition: EditionId, cardId: string, variant: VariantId, prev: OwnedEntry | undefined) => void;
   /** 세트 수집률: 버전 상관없이 카드 종류 기준 */
   setProgress: (edition: EditionId, set: CardSet) => { owned: number; total: number };
 }
@@ -97,6 +99,12 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
           // 사진을 올리면 최소 1장 가진 것으로 봅니다.
           return { count: Math.max(prev?.count ?? 0, photo ? 1 : 0), photo, updatedAt: Date.now() };
         });
+      },
+      restore: (e, id, v, prevEntry) => {
+        const key = entryKey(e, id, v);
+        const cur = data[key]?.photo;
+        if (cur && cur !== prevEntry?.photo) deletePhoto(cur);
+        update(key, () => prevEntry);
       },
       setProgress: (e, set) => ({
         owned: set.cards.filter((c) => isOwned(e, c)).length,

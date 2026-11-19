@@ -13,8 +13,14 @@ const SAVE_WIDTH = 720;
 
 export type PhotoSource = 'camera' | 'library';
 
-/** 카메라나 앨범에서 사진을 받아 카드 비율로 자르고, 줄여서, 앱 폴더에 저장합니다. 저장된 파일 이름을 돌려줍니다. */
-export async function pickAndSavePhoto(source: PhotoSource, baseName: string): Promise<string | null> {
+export interface PickedPhoto {
+  /** 카드 비율로 잘린 원본 크기 사진 (글자 읽기에 씀) */
+  uri: string;
+  width: number;
+}
+
+/** 카메라나 앨범에서 사진을 받아 카드 비율로 자릅니다. 취소하면 null. */
+export async function pickPhoto(source: PhotoSource): Promise<PickedPhoto | null> {
   const options: ImagePicker.ImagePickerOptions = {
     mediaTypes: ['images'],
     allowsEditing: true,
@@ -31,10 +37,14 @@ export async function pickAndSavePhoto(source: PhotoSource, baseName: string): P
     result = await ImagePicker.launchImageLibraryAsync(options);
   }
   if (result.canceled || result.assets.length === 0) return null;
-
   const asset = result.assets[0];
-  const ctx = ImageManipulator.manipulate(asset.uri);
-  if (asset.width > SAVE_WIDTH) ctx.resize({ width: SAVE_WIDTH });
+  return { uri: asset.uri, width: asset.width };
+}
+
+/** 받은 사진을 줄여서 앱 폴더에 저장합니다. 저장된 파일 이름을 돌려줍니다. */
+export async function savePhoto(photo: PickedPhoto, baseName: string): Promise<string> {
+  const ctx = ImageManipulator.manipulate(photo.uri);
+  if (photo.width > SAVE_WIDTH) ctx.resize({ width: SAVE_WIDTH });
   const image = await ctx.renderAsync();
   const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
 
@@ -43,6 +53,12 @@ export async function pickAndSavePhoto(source: PhotoSource, baseName: string): P
   const fileName = `${baseName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${Date.now()}.jpg`;
   new File(saved.uri).moveSync(new File(dir, fileName));
   return fileName;
+}
+
+/** 카메라나 앨범에서 사진을 받아 카드 비율로 자르고, 줄여서, 앱 폴더에 저장합니다. 저장된 파일 이름을 돌려줍니다. */
+export async function pickAndSavePhoto(source: PhotoSource, baseName: string): Promise<string | null> {
+  const photo = await pickPhoto(source);
+  return photo ? savePhoto(photo, baseName) : null;
 }
 
 export const photoUri = (fileName: string) => new File(photoDir(), fileName).uri;

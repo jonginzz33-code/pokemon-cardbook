@@ -24,11 +24,19 @@ export default function EditionScreen() {
         contentContainerStyle={styles.wrap}
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={
-          data.sample ? (
-            <View style={styles.notice}>
-              <Text style={styles.noticeText}>⚠️ {data.source}</Text>
-            </View>
-          ) : undefined
+          <View style={{ gap: 10 }}>
+            <Pressable
+              onPress={() => router.push({ pathname: '/scan', params: { edition } })}
+              style={({ pressed }) => [styles.scan, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.scanText}>📷 {editionLabel(edition)} 카드 찍어서 넣기</Text>
+            </Pressable>
+            {data.sample ? (
+              <View style={styles.notice}>
+                <Text style={styles.noticeText}>⚠️ {data.source}</Text>
+              </View>
+            ) : null}
+          </View>
         }
         renderSectionHeader={({ section }) => (
           <Text style={styles.series}>
@@ -68,6 +76,8 @@ export default function EditionScreen() {
 
 const styles = StyleSheet.create({
   wrap: { padding: 16, paddingTop: 4, gap: 10 },
+  scan: { backgroundColor: colors.accent, borderRadius: 12, padding: 14, alignItems: 'center' },
+  scanText: { fontSize: 15, fontWeight: '800', color: '#fff' },
   notice: { backgroundColor: '#FFF4D6', borderRadius: 10, padding: 12, marginBottom: 4 },
   noticeText: { fontSize: 12, color: '#7A5B00', lineHeight: 18 },
   series: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 14, marginBottom: 2 },

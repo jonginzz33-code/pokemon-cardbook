@@ -12,6 +12,11 @@ export default function Home() {
 
   return (
     <ScrollView contentContainerStyle={styles.wrap}>
+      <Pressable onPress={() => router.push('/scan')} style={({ pressed }) => [styles.scan, pressed && styles.pressed]}>
+        <Text style={styles.scanTitle}>📷 카드 찍어서 넣기</Text>
+        <Text style={styles.scanSub}>사진을 찍으면 번호를 읽어 알맞은 칸에 자동으로 넣어요</Text>
+      </Pressable>
+
       <Text style={styles.lead}>어떤 판을 모으고 있나요?</Text>
 
       {EDITIONS.map((ed) => {
@@ -55,6 +60,9 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   wrap: { padding: 16, gap: 12 },
+  scan: { backgroundColor: colors.accent, borderRadius: 14, padding: 18, gap: 4 },
+  scanTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  scanSub: { fontSize: 13, color: '#E3E0FF' },
   lead: { fontSize: 15, color: colors.sub, marginBottom: 4 },
   card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, gap: 12 },
   pressed: { opacity: 0.7 },
