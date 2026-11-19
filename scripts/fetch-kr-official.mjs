@@ -11,7 +11,7 @@
 // 사용법: node scripts/fetch-kr-official.mjs [시작연도] [끝연도]
 // (이 작업 환경에서는 NODE_USE_ENV_PROXY=1 로 실행)
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,7 +19,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'src', 'data', 'editions', 'ko.json');
 const CACHE = join(ROOT, '.cache', 'kr-official');
 const BASE = 'https://pokemoncard.co.kr/cards/detail/';
-const WORKERS = 4;
+const WORKERS = Number(process.env.WORKERS) || 6;
 const DELAY_MS = 250;
 const NOW_YEAR = new Date().getFullYear();
 const FROM = Number(process.argv[2]) || 2010;
@@ -28,7 +28,7 @@ const TO = Number(process.argv[3]) || NOW_YEAR + 1;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const pad3 = (n) => String(n).padStart(3, '0');
 
-const decode = (s) =>
+const decode1 = (s) =>
   s
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -37,6 +37,7 @@ const decode = (s) =>
     .replace(/&#0?39;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .trim();
+const decode = (s) => decode1(decode1(s));
 
 const TYPE_KO = {
   풀: 'grass',
@@ -95,11 +96,11 @@ function parse(id, html) {
 async function fetchSet(year, seq) {
   const key = `${year}${pad3(seq)}`;
   const cacheFile = join(CACHE, `${key}.json`);
-  if (year < NOW_YEAR - 1) {
-    try {
-      return JSON.parse(await readFile(cacheFile, 'utf8'));
-    } catch {}
-  }
+  // 이미 받은 세트는 캐시에서. 최근 2년 세트는 하루 지나면 새 카드가 있을 수 있어 다시 받음.
+  try {
+    const st = await stat(cacheFile);
+    if (year < NOW_YEAR - 1 || Date.now() - st.mtimeMs < 86400000) return JSON.parse(await readFile(cacheFile, 'utf8'));
+  } catch {}
   const items = [];
   let miss = 0;
   for (let n = 1; n <= 999 && miss < 6; n++) {
