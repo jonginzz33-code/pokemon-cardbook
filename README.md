@@ -59,6 +59,12 @@ npm start          # Expo 개발 서버
 npm run typecheck
 ```
 
+## 앱 안 업데이트 (화장실 앱과 같은 방식)
+
+- APK판은 앱을 켤 때 GitHub Releases `latest` 본문의 `versionCode=N` 과 내 빌드 번호를 비교합니다. 새 버전이면 홈 맨 위에 **🆕 새 버전이 있어요 → 지금 업데이트**가 뜨고, `cardbook.apk` 를 받아 안드로이드 설치 화면을 엽니다 (`src/update/updater.ts`).
+- 홈 맨 아래 '버전 … · 업데이트 확인'을 눌러 손으로 확인할 수도 있습니다.
+- 플레이 스토어용 AAB 는 `STORE_BUILD=1` 로 따로 만들어 앱 안 업데이트와 `REQUEST_INSTALL_PACKAGES` 권한을 뺍니다 (스토어 정책).
+
 ## 빌드와 플레이 스토어 자동 올리기
 
 `.github/workflows/build.yml` (조과기록·화장실 앱과 같은 방식)

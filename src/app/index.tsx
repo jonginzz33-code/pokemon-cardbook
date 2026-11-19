@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressBar } from '@/components/ProgressBar';
+import { UpdateBanner, VersionLine } from '@/components/UpdateBanner';
 import { getEdition } from '@/data';
 import { EDITIONS } from '@/data/labels';
 import { useCollection } from '@/store/collection';
@@ -12,6 +13,8 @@ export default function Home() {
 
   return (
     <ScrollView contentContainerStyle={styles.wrap}>
+      <UpdateBanner />
+
       <Pressable onPress={() => router.push('/scan')} style={({ pressed }) => [styles.scan, pressed && styles.pressed]}>
         <Text style={styles.scanTitle}>📷 카드 찍어서 넣기</Text>
         <Text style={styles.scanSub}>사진을 찍으면 번호를 읽어 알맞은 칸에 자동으로 넣어요</Text>
@@ -54,6 +57,7 @@ export default function Home() {
         이 앱은 개인 수집 기록용 비공식 팬 앱이며, 포켓몬 카드 게임의 제작사·유통사와 관련이 없습니다. 카드 사진은 직접
         찍은 사진만 이 폰에 저장됩니다.
       </Text>
+      <VersionLine />
     </ScrollView>
   );
 }

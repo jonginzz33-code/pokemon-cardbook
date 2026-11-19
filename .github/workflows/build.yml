@@ -68,12 +68,17 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
+      # APK = 앱 안 업데이트 켜짐 · AAB = 플레이 스토어용(앱 안 업데이트 · APK 설치 권한 뺌)이라 따로 만들어요
       - name: APK + 스토어용 AAB 빌드
         if: ${{ env.STORE == 'true' && steps.key.outputs.ok == '1' }}
-        working-directory: android
         run: |
-          ./gradlew assembleRelease bundleRelease --no-daemon
-          cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/cardbook-play-$VERSION_CODE.aab"
+          (cd android && ./gradlew assembleRelease --no-daemon)
+          cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/app-release.apk"
+          STORE_BUILD=1 npx expo prebuild --platform android --no-install --clean
+          (cd android && ./gradlew bundleRelease --no-daemon)
+          cp android/app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/cardbook-play-$VERSION_CODE.aab"
+          mkdir -p android/app/build/outputs/apk/release
+          cp "$RUNNER_TEMP/app-release.apk" android/app/build/outputs/apk/release/app-release.apk
 
       - name: 업로드 키 지우기
         if: ${{ always() && steps.key.outputs.ok == '1' }}
@@ -97,6 +102,8 @@ jobs:
           name: 카드 도감 최신판 (빌드 ${{ github.run_number }})
           body: |
             폰에서 **cardbook.apk** 를 눌러 받아 설치하세요. (빌드 ${{ github.run_number }})
+            이미 설치했다면 앱을 켜면 '새 버전이 있어요'가 떠요.
+            versionCode=${{ github.run_number }}
             cardbook-play-*.aab 는 나중에 플레이 스토어에 올릴 때 쓰는 파일이에요.
           files: |
             cardbook.apk
