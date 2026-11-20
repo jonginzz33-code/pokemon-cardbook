@@ -8,8 +8,20 @@ export const ocrSupported = cardScannerAvailable;
 const SCRIPT: Record<EditionId, 'korean' | 'japanese' | 'latin'> = { ko: 'korean', ja: 'japanese', en: 'latin' };
 
 /** 사진에서 글자를 줄 단위로 읽습니다 (폰 안에서 Google ML Kit으로, 인터넷 없이). 판에 맞는 글자(한국어·일본어·영문)로 읽어요. */
-export function readText(uri: string, edition: EditionId): Promise<string[]> {
-  return recognizeText(uri, SCRIPT[edition]);
+export async function readText(uri: string, edition: EditionId): Promise<string[]> {
+  const script = SCRIPT[edition];
+  try {
+    return await recognizeText(uri, script);
+  } catch (first) {
+    if (script === 'latin') throw first;
+    // 한국어·일본어 인식기가 안 되면 영문 인식기로 한 번 더 (번호·세트 코드는 영문으로도 읽혀요)
+    try {
+      return await recognizeText(uri, 'latin');
+    } catch (second) {
+      const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+      throw new Error(`${msg(first)}\n\n(영문 인식기로도 실패)\n${msg(second)}`);
+    }
+  }
 }
 
 export interface ReadInfo {

@@ -160,7 +160,9 @@ export default function ScanScreen() {
         {state.step === 'error' ? (
           <View style={styles.box}>
             <Text style={styles.boxTitle}>⚠️ {state.where} 중에 문제가 생겼어요</Text>
-            <Text style={styles.help}>{state.message}</Text>
+            <Text style={styles.help} selectable>
+              {state.message}
+            </Text>
           </View>
         ) : null}
 
@@ -207,9 +209,15 @@ export default function ScanScreen() {
                       : '맞는 카드를 찾지 못했어요'}
                 </Text>
                 {state.ocrError ? (
-                  <Text style={styles.help}>
-                    글자를 읽지 못했어요 ({state.ocrError}). 아래에 번호를 적어 찾아 주세요.
-                  </Text>
+                  <>
+                    <Text style={styles.help}>
+                      글자를 읽지 못했어요. 아래에 카드 번호(예: 055/071)를 적어 찾아 주세요.
+                    </Text>
+                    <Text style={styles.raw} selectable>
+                      오류 자세히 (캡처해서 보내 주세요):{'\n'}
+                      {state.ocrError}
+                    </Text>
+                  </>
                 ) : null}
                 <TextInput
                   value={query}

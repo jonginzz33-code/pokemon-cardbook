@@ -26,16 +26,21 @@ export interface PickedPhoto {
  * 카메라는 카드 촬영 화면(카드 모서리를 자동으로 찾아 반듯하게 펴서 잘라 줌)을 쓰고,
  * 그 화면을 못 쓰는 폰이면 예전처럼 찍고 손으로 자르는 화면으로 넘어가요.
  */
+/** 카드 촬영 화면이 실패했을 때 마지막 오류 (예전 방식으로 넘어간 이유) */
+export let lastScanError: string | undefined;
+
 export async function pickPhoto(source: PhotoSource): Promise<PickedPhoto | null> {
   if (source === 'camera' && cardScannerAvailable) {
-    try {
-      const uri = await scanCard();
-      if (!uri) return null;
-      return { uri, width: 0 };
-    } catch (e) {
-      const code = (e as { code?: string }).code;
-      // 카드 촬영 화면을 못 쓰는 경우에만 예전 방식으로 (그 밖의 오류는 그대로 알림)
-      if (code !== 'ERR_SCAN_UNAVAILABLE' && code !== 'ERR_ACTIVITY') throw e;
+    // 카드 촬영 화면: 가끔 처음에 실패해서 한 번 더 시도하고, 그래도 안 되면 예전 방식으로
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const uri = await scanCard();
+        if (!uri) return null; // 사용자가 취소
+        return { uri, width: 0 };
+      } catch (e) {
+        lastScanError = e instanceof Error ? e.message : String(e);
+        if ((e as { code?: string }).code === 'ERR_BUSY') return null;
+      }
     }
   }
   return pickWithPicker(source);
