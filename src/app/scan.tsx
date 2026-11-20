@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { cardVariants, isEditionId } from '@/data';
 import { EDITIONS } from '@/data/labels';
@@ -22,8 +22,19 @@ type Saved = {
 type State =
   | { step: 'idle' }
   | { step: 'reading'; photo: PickedPhoto }
-  | { step: 'result'; photo: PickedPhoto; info: ReadInfo; candidates: Candidate[]; saved?: Saved; undone?: boolean }
-  | { step: 'error'; message: string };
+  | {
+      step: 'result';
+      photo: PickedPhoto;
+      info: ReadInfo;
+      candidates: Candidate[];
+      saved?: Saved;
+      undone?: boolean;
+      /** 글자 읽기가 실패했을 때 그 이유 (사진은 그대로 두고 직접 고르게) */
+      ocrError?: string;
+    }
+  | { step: 'error'; where: string; message: string };
+
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export default function ScanScreen() {
   const params = useLocalSearchParams<{ edition?: string }>();
@@ -31,6 +42,7 @@ export default function ScanScreen() {
   const [edition, setEdition] = useState<EditionId>(isEditionId(params.edition) ? params.edition : 'ko');
   const [state, setState] = useState<State>({ step: 'idle' });
   const [count, setCount] = useState(0);
+  const [query, setQuery] = useState('');
 
   const assign = async (photo: PickedPhoto, cand: Candidate): Promise<Saved> => {
     const variant = cardVariants(cand.card)[0];
@@ -48,18 +60,50 @@ export default function ScanScreen() {
   };
 
   const scan = async (source: PhotoSource) => {
+    // ① 사진 받기
+    let photo: PickedPhoto | null;
     try {
-      const photo = await pickPhoto(source);
-      if (!photo) return;
-      setState({ step: 'reading', photo });
-      const lines = await readText(photo.uri);
-      const { info, candidates } = findCandidates(edition, lines);
-      const pick = confidentPick(candidates);
-      const saved = pick ? await assign(photo, pick) : undefined;
-      setState({ step: 'result', photo, info, candidates, saved });
+      photo = await pickPhoto(source);
     } catch (e) {
-      setState({ step: 'error', message: e instanceof Error ? e.message : String(e) });
+      setState({ step: 'error', where: '사진 받기', message: errText(e) });
+      return;
     }
+    if (!photo) return;
+    setState({ step: 'reading', photo });
+    setQuery('');
+
+    // ② 글자 읽기 — 실패해도 사진은 두고 직접 고르게
+    let lines: string[] = [];
+    let ocrError: string | undefined;
+    try {
+      lines = await readText(photo.uri, edition);
+    } catch (e) {
+      ocrError = errText(e);
+    }
+    const { info, candidates } = findCandidates(edition, lines);
+
+    // ③ 확실하면 바로 저장
+    const pick = confidentPick(candidates);
+    let saved: Saved | undefined;
+    if (pick) {
+      try {
+        saved = await assign(photo, pick);
+      } catch (e) {
+        setState({ step: 'error', where: '저장', message: errText(e) });
+        return;
+      }
+    }
+    setState({ step: 'result', photo, info, candidates, saved, ocrError });
+  };
+
+  /** 번호(예: 006/165, SV2a 006)나 이름으로 직접 찾기 */
+  const search = (text: string) => {
+    setQuery(text);
+    if (state.step !== 'result' || state.saved) return;
+    const t = text.trim();
+    if (!t) return;
+    const { candidates } = findCandidates(edition, [t], true);
+    setState({ ...state, candidates });
   };
 
   const choose = async (cand: Candidate) => {
@@ -68,7 +112,7 @@ export default function ScanScreen() {
       const saved = await assign(state.photo, cand);
       setState({ ...state, saved, undone: false });
     } catch (e) {
-      setState({ step: 'error', message: e instanceof Error ? e.message : String(e) });
+      setState({ step: 'error', where: '저장', message: errText(e) });
     }
   };
 
@@ -115,7 +159,7 @@ export default function ScanScreen() {
 
         {state.step === 'error' ? (
           <View style={styles.box}>
-            <Text style={styles.boxTitle}>⚠️ 문제가 생겼어요</Text>
+            <Text style={styles.boxTitle}>⚠️ {state.where} 중에 문제가 생겼어요</Text>
             <Text style={styles.help}>{state.message}</Text>
           </View>
         ) : null}
@@ -162,6 +206,19 @@ export default function ScanScreen() {
                       ? '어떤 카드인가요? 골라 주세요'
                       : '맞는 카드를 찾지 못했어요'}
                 </Text>
+                {state.ocrError ? (
+                  <Text style={styles.help}>
+                    글자를 읽지 못했어요 ({state.ocrError}). 아래에 번호를 적어 찾아 주세요.
+                  </Text>
+                ) : null}
+                <TextInput
+                  value={query}
+                  onChangeText={search}
+                  placeholder="번호나 이름으로 찾기 (예: 006/165, SV2a 006, 피카츄)"
+                  placeholderTextColor={colors.sub}
+                  style={styles.input}
+                  autoCorrect={false}
+                />
                 {state.candidates.map((c) => (
                   <Pressable
                     key={c.card.id}
@@ -260,6 +317,16 @@ const styles = StyleSheet.create({
   cand: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.line, gap: 2 },
   candTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   candSub: { fontSize: 12, color: colors.sub },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: colors.bg,
+  },
   raw: { fontSize: 11, color: colors.sub, marginTop: 4 },
   row: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
   big: {

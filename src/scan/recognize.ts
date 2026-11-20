@@ -1,15 +1,15 @@
-import { extractTextFromImage, isSupported } from 'expo-text-extractor';
+import { cardScannerAvailable, recognizeText } from '../../modules/card-scanner/src';
 
 import { getEdition } from '@/data';
 import type { Card, CardSet, EditionId, Series } from '@/data/types';
 
-export const ocrSupported = isSupported;
+export const ocrSupported = cardScannerAvailable;
 
-/** 사진에서 글자를 읽습니다 (폰 안에서 Google ML Kit으로, 인터넷 없이). */
-export async function readText(uri: string): Promise<string[]> {
-  // 모듈이 file:// 없는 경로를 기대해요.
-  const path = uri.startsWith('file://') ? decodeURI(uri.slice('file://'.length)) : uri;
-  return extractTextFromImage(path);
+const SCRIPT: Record<EditionId, 'korean' | 'japanese' | 'latin'> = { ko: 'korean', ja: 'japanese', en: 'latin' };
+
+/** 사진에서 글자를 줄 단위로 읽습니다 (폰 안에서 Google ML Kit으로, 인터넷 없이). 판에 맞는 글자(한국어·일본어·영문)로 읽어요. */
+export function readText(uri: string, edition: EditionId): Promise<string[]> {
+  return recognizeText(uri, SCRIPT[edition]);
 }
 
 export interface ReadInfo {
@@ -35,7 +35,7 @@ const fixDigits = (s: string) =>
   s.replace(/[Oo]/g, '0').replace(/[Il|]/g, '1').replace(/[Ss]/g, '5').replace(/B/g, '8');
 
 /** 읽은 글자에서 "번호/총장수" 를 찾습니다. 카드 아래쪽에 있는 경우가 많아 뒤에서부터 봅니다. */
-export function parseNumber(lines: string[]): ReadInfo {
+export function parseNumber(lines: string[], loose = false): ReadInfo {
   const text = lines.join(' ').replace(/\s+/g, ' ').trim();
   const re = /(?<![0-9A-Za-z])([0-9OoIl|SB]{1,3})\s*\/\s*([0-9OoIl|SB]{2,3})(?![0-9])/g;
   let best: { number: number; total: number } | undefined;
@@ -47,14 +47,23 @@ export function parseNumber(lines: string[]): ReadInfo {
     if (number === 0 || number > total * 2) continue;
     best = { number, total };
   }
+  // 손으로 적은 검색어는 "006" 처럼 총장수 없이 번호만 적어도 돼요
+  if (!best && loose) {
+    const m = /(?<![0-9A-Za-z])(\d{1,3})(?![0-9])/.exec(text);
+    if (m) return { text, number: parseInt(m[1], 10) };
+  }
   return { text, ...best };
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-·・'’.]/g, '');
 
 /** 읽은 내용으로 그 판의 카드 후보를 점수순으로 찾습니다. */
-export function findCandidates(edition: EditionId, lines: string[]): { info: ReadInfo; candidates: Candidate[] } {
-  const info = parseNumber(lines);
+export function findCandidates(
+  edition: EditionId,
+  lines: string[],
+  loose = false,
+): { info: ReadInfo; candidates: Candidate[] } {
+  const info = parseNumber(lines, loose);
   const textNorm = norm(info.text);
   const tokens = new Set(info.text.split(/[^0-9A-Za-z]+/).map((t) => t.toLowerCase()));
 

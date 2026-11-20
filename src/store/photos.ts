@@ -2,6 +2,8 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
+import { cardScannerAvailable, scanCard } from '../../modules/card-scanner/src';
+
 // 사진은 서버가 아니라 이 폰의 앱 전용 폴더(문서 폴더)에 저장합니다.
 // 앱을 지우기 전까지 시스템이 임의로 지우지 않는 위치입니다.
 const photoDir = () => new Directory(Paths.document, 'card-photos');
@@ -19,8 +21,27 @@ export interface PickedPhoto {
   width: number;
 }
 
-/** 카메라나 앨범에서 사진을 받아 카드 비율로 자릅니다. 취소하면 null. */
+/**
+ * 카메라나 앨범에서 사진을 받습니다. 취소하면 null.
+ * 카메라는 카드 촬영 화면(카드 모서리를 자동으로 찾아 반듯하게 펴서 잘라 줌)을 쓰고,
+ * 그 화면을 못 쓰는 폰이면 예전처럼 찍고 손으로 자르는 화면으로 넘어가요.
+ */
 export async function pickPhoto(source: PhotoSource): Promise<PickedPhoto | null> {
+  if (source === 'camera' && cardScannerAvailable) {
+    try {
+      const uri = await scanCard();
+      if (!uri) return null;
+      return { uri, width: 0 };
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      // 카드 촬영 화면을 못 쓰는 경우에만 예전 방식으로 (그 밖의 오류는 그대로 알림)
+      if (code !== 'ERR_SCAN_UNAVAILABLE' && code !== 'ERR_ACTIVITY') throw e;
+    }
+  }
+  return pickWithPicker(source);
+}
+
+async function pickWithPicker(source: PhotoSource): Promise<PickedPhoto | null> {
   const options: ImagePicker.ImagePickerOptions = {
     mediaTypes: ['images'],
     allowsEditing: true,
@@ -43,8 +64,9 @@ export async function pickPhoto(source: PhotoSource): Promise<PickedPhoto | null
 
 /** 받은 사진을 줄여서 앱 폴더에 저장합니다. 저장된 파일 이름을 돌려줍니다. */
 export async function savePhoto(photo: PickedPhoto, baseName: string): Promise<string> {
+  // 늘 카드 비율(63:88) 그대로 저장: 자동으로 잘린 사진이 조금 어긋나도 칸에 딱 맞게
   const ctx = ImageManipulator.manipulate(photo.uri);
-  if (photo.width > SAVE_WIDTH) ctx.resize({ width: SAVE_WIDTH });
+  ctx.resize({ width: SAVE_WIDTH, height: Math.round((SAVE_WIDTH * CARD_ASPECT[1]) / CARD_ASPECT[0]) });
   const image = await ctx.renderAsync();
   const saved = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });
 
