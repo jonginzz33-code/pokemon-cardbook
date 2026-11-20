@@ -1,0 +1,42 @@
+apply plugin: 'com.android.library'
+
+group = 'expo.modules.cardscanner'
+version = '1.0.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useExpoPublishing()
+
+buildscript {
+  ext.safeExtGet = { prop, fallback ->
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  }
+}
+project.android {
+  compileSdkVersion safeExtGet("compileSdkVersion", 36)
+  defaultConfig {
+    minSdkVersion safeExtGet("minSdkVersion", 24)
+    targetSdkVersion safeExtGet("targetSdkVersion", 36)
+  }
+}
+
+android {
+  namespace "expo.modules.cardscanner"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+  dependencies {
+    // 글자 인식: 앱 안에 포함된 모델 (Play 서비스 다운로드 없이 바로 동작)
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+    implementation 'com.google.mlkit:text-recognition-korean:16.0.1'
+    implementation 'com.google.mlkit:text-recognition-japanese:16.0.1'
+    // 카드 촬영: 모서리 자동 인식 · 반듯하게 펴서 자르기 (Google Play 서비스)
+    implementation 'com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1'
+  }
+}

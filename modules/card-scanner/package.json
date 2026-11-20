@@ -1,0 +1,7 @@
+{
+  "name": "card-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "카드 도감 앱 전용: 카드 촬영(모서리 자동 인식·자르기)과 글자 인식(한국어·일본어·영문) — Google ML Kit",
+  "main": "src/index.ts"
+}
