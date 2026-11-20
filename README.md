@@ -44,7 +44,7 @@
 | 판 | 출처 | 2026-11-19 기준 | 다시 받기 |
 | --- | --- | --- | --- |
 | 한국판 | 포켓몬코리아 공식 카드 검색 상세 페이지 | 205세트 · 17,394장 (DP 2010 ~ MEGA 2026) | `NODE_USE_ENV_PROXY=1 node scripts/fetch-kr-official.mjs` |
-| 일본판 | TCGdex | 121세트 · 13,156장 | `node scripts/fetch-tcgdex.mjs ja` |
+| 일본판 | 일본 공식 카드 검색 (DP 이후) + TCGdex (DP 이전) | 357세트 · 25,714장 | `NODE_USE_ENV_PROXY=1 node scripts/fetch-jp-official.mjs` |
 | 영문판 | TCGdex (TCG Pocket 제외) | 21,432장 | `node scripts/fetch-tcgdex.mjs en` |
 
 - TCGdex 한국어는 카드 목록이 있는 세트가 3개뿐이라 한국판은 공식 사이트를 씁니다. 천천히(동시 6~8개, 요청마다 쉼) 받고, 받은 세트는 `.cache/kr-official/` 에 남겨 다시 돌리면 새 세트만 받습니다.
