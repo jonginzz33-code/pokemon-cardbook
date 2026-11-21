@@ -4,7 +4,9 @@ name: Build
 #  - 모든 브랜치: 바로 설치해 볼 APK → Actions 실행 화면 Artifacts 'Cardbook-apk'
 #  - main 에 올리거나 Actions 탭에서 손으로 실행하면:
 #      ① 폰에서 바로 받는 APK → Releases 'latest' 의 cardbook.apk (지금은 이걸로 직접 설치해서 테스트)
-#      ② 업로드 키로 서명한 스토어용 AAB → 같은 곳에 cardbook-play-<번호>.aab (비밀값 PLAY_KEY_PASS 있을 때)
+#      ② 업로드 키로 서명한 스토어용 AAB → 같은 곳에 cardbook-play-<번호>.aab
+#         — 지금은 멈춤 (사용자 2026-11-21: 플레이스토어는 잠시 멈추고 APK 만 · 빌드 10분 빨라짐).
+#           다시 켜려면 저장소 변수 BUILD_AAB 를 true 로 (Settings → Secrets and variables → Actions → Variables)
 #      ③ 플레이 콘솔 자동 업로드 — 꺼져 있음. 스토어에 올릴 때가 되면 저장소 변수 PLAY_UPLOAD 를 true 로
 #         (기본 internal 트랙 · 저장소 변수 PLAY_TRACK 로 바꿈, 예: alpha)
 #  비밀값: PLAY_KEY_PASS (업로드 키 비밀번호) · PLAY_SERVICE_ACCOUNT_JSON (플레이 콘솔 서비스 계정)
@@ -27,6 +29,7 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
       STORE: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+      AAB: ${{ vars.BUILD_AAB == 'true' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
     steps:
       - name: 소스 가져오기
         uses: actions/checkout@v4
@@ -65,13 +68,13 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       - name: APK 빌드
-        if: ${{ env.STORE != 'true' || steps.key.outputs.ok != '1' }}
+        if: ${{ env.AAB != 'true' || steps.key.outputs.ok != '1' }}
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       # APK = 앱 안 업데이트 켜짐 · AAB = 플레이 스토어용(앱 안 업데이트 · APK 설치 권한 뺌)이라 따로 만들어요
       - name: APK + 스토어용 AAB 빌드
-        if: ${{ env.STORE == 'true' && steps.key.outputs.ok == '1' }}
+        if: ${{ env.AAB == 'true' && steps.key.outputs.ok == '1' }}
         run: |
           # APK 는 요즘 폰(arm64)용만 넣어 크기를 절반 이하로 · AAB 는 스토어가 폰마다 골라 주니 전부 넣음
           (cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a)
