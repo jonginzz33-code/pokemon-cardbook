@@ -3,8 +3,9 @@
     "name": "카드 도감",
     "slug": "cardbook",
     "scheme": "cardbook",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true

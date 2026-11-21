@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   chipText: { fontSize: 13, color: colors.text, fontWeight: '600' },
-  chipTextActive: { color: '#fff' },
+  chipTextActive: { color: colors.onAccent },
   caption: { fontSize: 11, color: colors.text, marginTop: 4, fontWeight: '600' },
   captionMissing: { color: colors.sub, fontWeight: '400' },
   empty: { textAlign: 'center', color: colors.sub, marginTop: 40 },

@@ -1,15 +1,25 @@
 import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ProgressBar } from '@/components/ProgressBar';
 import { UpdateBanner, VersionLine } from '@/components/UpdateBanner';
 import { getEdition } from '@/data';
 import { EDITIONS } from '@/data/labels';
+import { lastBackupAt } from '@/store/backup';
 import { useCollection } from '@/store/collection';
 import { colors } from '@/theme';
 
 export default function Home() {
   const col = useCollection();
+  // 💾 백업 알림: 카드가 10개 넘게 쌓였는데 2주 넘게 백업을 안 했으면
+  const recordCount = useMemo(() => Object.values(col.all).filter((e) => e.count > 0).length, [col.all]);
+  const [lastBackup, setLastBackup] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    void lastBackupAt().then(setLastBackup);
+  }, [recordCount]);
+  const needBackup =
+    lastBackup !== undefined && recordCount >= 10 && (lastBackup === null || Date.now() - lastBackup > 14 * 86400000);
 
   return (
     <ScrollView contentContainerStyle={styles.wrap}>
@@ -19,6 +29,33 @@ export default function Home() {
         <Text style={styles.scanTitle}>📷 카드 찍어서 넣기</Text>
         <Text style={styles.scanSub}>사진을 찍으면 번호를 읽어 알맞은 칸에 자동으로 넣어요</Text>
       </Pressable>
+
+      <View style={styles.quick}>
+        <Pressable
+          onPress={() => router.push('/search')}
+          style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.quickText}>🔍 카드 검색</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/me')}
+          style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.quickText}>📚 내 컬렉션</Text>
+        </Pressable>
+      </View>
+
+      {needBackup ? (
+        <Pressable
+          onPress={() => router.push('/me/backup')}
+          style={({ pressed }) => [styles.backup, pressed && styles.pressed]}
+        >
+          <Text style={styles.backupText}>
+            💾 {lastBackup === null ? '아직 백업한 적이 없어요' : '백업한 지 2주가 넘었어요'} — 사진과 기록을 지키려면
+            눌러서 백업하세요
+          </Text>
+        </Pressable>
+      ) : null}
 
       <Text style={styles.lead}>어떤 판을 모으고 있나요?</Text>
 
@@ -65,8 +102,21 @@ export default function Home() {
 const styles = StyleSheet.create({
   wrap: { padding: 16, gap: 12 },
   scan: { backgroundColor: colors.accent, borderRadius: 14, padding: 18, gap: 4 },
-  scanTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  scanSub: { fontSize: 13, color: '#E3E0FF' },
+  scanTitle: { fontSize: 18, fontWeight: '800', color: colors.onAccent },
+  scanSub: { fontSize: 13, color: colors.onAccentSub },
+  quick: { flexDirection: 'row', gap: 8 },
+  quickBtn: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  quickText: { fontSize: 15, fontWeight: '700', color: colors.text },
+  backup: { backgroundColor: colors.warnSoft, borderRadius: 12, padding: 12 },
+  backupText: { fontSize: 13, color: colors.warnText, lineHeight: 19 },
   lead: { fontSize: 15, color: colors.sub, marginBottom: 4 },
   card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, gap: 12 },
   pressed: { opacity: 0.7 },

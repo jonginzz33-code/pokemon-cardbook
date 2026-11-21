@@ -13,7 +13,7 @@ export interface OwnedEntry {
   updatedAt: number;
 }
 
-type Collection = Record<string, OwnedEntry>;
+export type Collection = Record<string, OwnedEntry>;
 
 const STORAGE_KEY = 'cardbook.collection.v1';
 
@@ -21,6 +21,10 @@ export const entryKey = (edition: EditionId, cardId: string, variant: VariantId)
 
 interface CollectionApi {
   ready: boolean;
+  /** 전체 기록 (키: 판|카드ID|버전) */
+  all: Collection;
+  /** 백업에서 되살리기: 기록을 통째로 바꿈 */
+  replaceAll: (data: Collection) => void;
   get: (edition: EditionId, cardId: string, variant: VariantId) => OwnedEntry | undefined;
   /** 이 카드의 버전 중 하나라도 가지고 있는지 */
   isOwned: (edition: EditionId, card: Card) => boolean;
@@ -75,6 +79,8 @@ export function CollectionProvider({ children }: { children: ReactNode }) {
       cardVariants(card).some((v) => (data[entryKey(e, card.id, v)]?.count ?? 0) > 0);
     return {
       ready,
+      all: data,
+      replaceAll: (next) => setData({ ...next }),
       get,
       isOwned,
       coverPhoto: (e, card) => {

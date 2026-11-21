@@ -1,7 +1,10 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+
+import { useNewCard } from '@/celebrate/useNewCard';
 
 import { cardVariants, isEditionId } from '@/data';
 import { EDITIONS } from '@/data/labels';
@@ -34,6 +37,7 @@ type State =
     }
   | { step: 'error'; where: string; message: string };
 
+const CONTINUOUS_KEY = 'cardbook.scan.continuous';
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export default function ScanScreen() {
@@ -43,10 +47,29 @@ export default function ScanScreen() {
   const [state, setState] = useState<State>({ step: 'idle' });
   const [count, setCount] = useState(0);
   const [query, setQuery] = useState('');
+  const newCard = useNewCard();
+  const continuousRef = useRef(false);
+  // 📸 연속 스캔: 한 장 들어가면 바로 다음 촬영 (폰에 기억)
+  const [continuous, setContinuous] = useState(false);
+  const alive = useRef(true);
+  useEffect(() => {
+    AsyncStorage.getItem(CONTINUOUS_KEY)
+      .then((v) => setContinuous(v === '1'))
+      .catch(() => {});
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  continuousRef.current = continuous;
+  const toggleContinuous = (on: boolean) => {
+    setContinuous(on);
+    AsyncStorage.setItem(CONTINUOUS_KEY, on ? '1' : '0').catch(() => {});
+  };
 
   const assign = async (photo: PickedPhoto, cand: Candidate): Promise<Saved> => {
     const variant = cardVariants(cand.card)[0];
     const prev = col.get(edition, cand.card.id, variant);
+    const snap = newCard.snapshot(edition, cand.card.id);
     if (prev?.photo) {
       // 이미 사진이 있는 카드 → 같은 카드를 한 장 더 가진 것으로
       col.setCount(edition, cand.card.id, variant, prev.count + 1);
@@ -56,6 +79,8 @@ export default function ScanScreen() {
     const file = await savePhoto(photo, `${edition}_${cand.card.id}_${variant}`);
     col.setPhoto(edition, cand.card.id, variant, file);
     setCount((n) => n + 1);
+    // 🎉 처음 가진 카드면 연출 (닫을 때까지 기다림)
+    await newCard.announce(snap, file);
     return { cand, variant, prev, mode: 'photo' };
   };
 
@@ -94,6 +119,13 @@ export default function ScanScreen() {
       }
     }
     setState({ step: 'result', photo, info, candidates, saved, ocrError });
+
+    // 📸 연속 스캔: 자동으로 넣었으면 바로 다음 카드 찍기 (확실하지 않으면 멈추고 고르게)
+    if (saved && continuousRef.current && source === 'camera') {
+      setTimeout(() => {
+        if (alive.current && continuousRef.current) void scan('camera');
+      }, 700);
+    }
   };
 
   /** 번호(예: 006/165, SV2a 006)나 이름으로 직접 찾기 */
@@ -135,11 +167,23 @@ export default function ScanScreen() {
               onPress={() => setEdition(ed.id)}
               style={[styles.edition, edition === ed.id && styles.editionActive]}
             >
-              <Text style={[styles.editionText, edition === ed.id && { color: '#fff' }]}>
+              <Text style={[styles.editionText, edition === ed.id && { color: colors.onAccent }]}>
                 {ed.flag} {ed.label}
               </Text>
             </Pressable>
           ))}
+        </View>
+
+        <View style={styles.contRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.contTitle}>📸 연속 스캔</Text>
+            <Text style={styles.help}>한 장이 들어가면 바로 다음 카드 촬영으로 넘어가요</Text>
+          </View>
+          <Switch
+            value={continuous}
+            onValueChange={toggleContinuous}
+            trackColor={{ true: colors.accent, false: colors.line }}
+          />
         </View>
 
         {state.step === 'idle' ? (
@@ -287,7 +331,7 @@ function BigBtn({
       disabled={disabled}
       style={({ pressed }) => [styles.big, primary && styles.bigPrimary, (pressed || disabled) && { opacity: 0.6 }]}
     >
-      <Text style={[styles.bigText, primary && { color: '#fff' }]}>{label}</Text>
+      <Text style={[styles.bigText, primary && { color: colors.onAccent }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -301,6 +345,15 @@ function SmallBtn({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  contRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 12,
+  },
+  contTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
   wrap: { padding: 16, gap: 14, paddingBottom: 40 },
   editions: { flexDirection: 'row', gap: 6 },
   edition: {
