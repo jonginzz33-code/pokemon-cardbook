@@ -3,12 +3,15 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ProgressBar } from '@/components/ProgressBar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { BottomBar, BOTTOM_BAR_SPACE } from '@/components/BottomBar';
+import { ProgressRing } from '@/components/ProgressBar';
 import { getEdition, isEditionId } from '@/data';
 import { editionLabel } from '@/data/labels';
 import type { CardSet, EditionId } from '@/data/types';
 import { useCollection } from '@/store/collection';
-import { colors } from '@/theme';
+import { colors, fonts, softCard, stampTints } from '@/theme';
 
 // 🗂️ 세트 목록 정렬 · 거르기 (메모 11)
 type Sort = 'new' | 'owned' | 'percent' | 'old' | 'name';
@@ -44,6 +47,7 @@ const norm = (s: string) => s.toLowerCase().replace(/[\s·・「」『』\-_&＆
 export default function EditionScreen() {
   const { edition } = useLocalSearchParams<{ edition: string }>();
   const col = useCollection();
+  const insets = useSafeAreaInsets();
   const [sort, setSort] = useState<Sort>('new');
   const [kind, setKind] = useState<Kind>('all');
   const [onlyOwned, setOnlyOwned] = useState(false);
@@ -126,7 +130,7 @@ export default function EditionScreen() {
   const isOpen = (key: string, i: number) => (open[key] ?? i === 0) || !!query.trim();
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Stack.Screen options={{ title: editionLabel(ed) }} />
       <SectionList
         sections={sections.map((s, i) => ({
@@ -136,30 +140,15 @@ export default function EditionScreen() {
           all: s.data.length,
         }))}
         keyExtractor={(r) => r.set.id}
-        contentContainerStyle={styles.wrap}
+        contentContainerStyle={[styles.wrap, { paddingBottom: BOTTOM_BAR_SPACE + insets.bottom }]}
         stickySectionHeadersEnabled={false}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
-            <View style={styles.topRow}>
-              <Pressable
-                onPress={() => router.push({ pathname: '/scan', params: { edition: ed } })}
-                style={({ pressed }) => [styles.scan, pressed && { opacity: 0.7 }]}
-              >
-                <Text style={styles.scanText}>📷 카드 찍어서 넣기</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push({ pathname: '/search', params: { edition: ed } })}
-                style={({ pressed }) => [styles.searchBtn, pressed && { opacity: 0.7 }]}
-              >
-                <Text style={styles.searchBtnText}>🔍 카드 검색</Text>
-              </Pressable>
-            </View>
-
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="세트 이름이나 코드로 찾기 (예: SV5K, 와일드)"
+              placeholder="🔎 세트 이름이나 코드로 찾기 (예: SV5K, 와일드)"
               placeholderTextColor={colors.sub}
               style={styles.input}
               autoCorrect={false}
@@ -207,33 +196,41 @@ export default function EditionScreen() {
             )
           ) : null
         }
-        renderItem={({ item: r }) => (
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: '/[edition]/set/[setId]', params: { edition: ed, setId: r.set.id } })
-            }
-            style={({ pressed }) => [styles.set, pressed && { opacity: 0.7 }]}
-          >
-            <View style={styles.setHead}>
-              {r.set.code ? <Text style={styles.code}>{r.set.code}</Text> : null}
-              <Text style={styles.setName} numberOfLines={2}>
-                {r.set.name}
-              </Text>
-            </View>
-            <Text style={styles.meta}>
-              {[
-                r.set.releaseDate ? `${r.set.releaseDate} 발매` : r.set.year ? `${r.set.year}년` : null,
-                r.set.officialCount ? `공식 ${r.set.officialCount}장` : null,
-                `수록 ${r.set.cards.length}장`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-            <ProgressBar owned={r.owned} total={r.total} compact />
-          </Pressable>
-        )}
+        renderItem={({ item: r }) => {
+          const tint = stampTints[r.order % stampTints.length];
+          const pct = r.total ? Math.round((r.owned / r.total) * 100) : 0;
+          return (
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: '/[edition]/set/[setId]', params: { edition: ed, setId: r.set.id } })
+              }
+              style={({ pressed }) => [styles.set, pressed && { opacity: 0.75 }]}
+            >
+              <View style={[styles.stamp, { backgroundColor: tint.soft, borderColor: tint.ring }]}>
+                <Text style={[styles.stampText, { color: tint.ink }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {r.set.code || r.set.name.slice(0, 2)}
+                </Text>
+              </View>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={styles.setName} numberOfLines={2}>
+                  {r.set.name}
+                </Text>
+                <Text style={styles.meta} numberOfLines={1}>
+                  {[
+                    r.set.releaseDate ? r.set.releaseDate : r.set.year ? `${r.set.year}년` : null,
+                    `${r.owned} / ${r.total}장`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Text>
+              </View>
+              <ProgressRing owned={r.owned} total={r.total} size={50} color={tint.ring} label={`${pct}%`} />
+            </Pressable>
+          );
+        }}
       />
-    </>
+      <BottomBar edition={ed} />
+    </View>
   );
 }
 
@@ -264,57 +261,47 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 16, paddingTop: 4, gap: 10, paddingBottom: 40 },
-  topRow: { flexDirection: 'row', gap: 8 },
-  scan: { flex: 1, backgroundColor: colors.accent, borderRadius: 12, padding: 14, alignItems: 'center' },
-  scanText: { fontSize: 15, fontWeight: '800', color: colors.onAccent },
-  searchBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  searchBtnText: { fontSize: 15, fontWeight: '700', color: colors.text },
+  wrap: { padding: 16, paddingTop: 4, gap: 10 },
   input: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.line,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 18,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
+    fontFamily: fonts.body,
     color: colors.text,
     backgroundColor: colors.surface,
   },
   chips: { flexDirection: 'row', gap: 6 },
   chip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     paddingVertical: 7,
-    borderRadius: 16,
+    borderRadius: 999,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.line,
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   chipSoft: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
-  chipText: { fontSize: 13, color: colors.text, fontWeight: '600' },
-  empty: { color: colors.sub, textAlign: 'center', marginTop: 20, lineHeight: 20 },
-  seriesRow: { marginTop: 14, marginBottom: 2 },
-  series: { fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 6 },
-  seriesCount: { fontSize: 13, fontWeight: '500', color: colors.sub },
-  set: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 8 },
-  setHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  code: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.accent,
-    backgroundColor: colors.accentSoft,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    overflow: 'hidden',
+  chipText: { fontSize: 13, color: colors.text, fontFamily: fonts.title },
+  empty: { color: colors.sub, textAlign: 'center', marginTop: 20, lineHeight: 20, fontFamily: fonts.body },
+  seriesRow: { marginTop: 12, marginBottom: 2 },
+  series: { fontSize: 18, fontFamily: fonts.title, color: colors.text, marginTop: 6, marginLeft: 4 },
+  seriesCount: { fontSize: 12, fontFamily: fonts.body, color: colors.sub },
+  set: { ...softCard, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stamp: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    transform: [{ rotate: '-4deg' }],
   },
-  setName: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 12, color: colors.sub },
+  stampText: { fontFamily: fonts.title, fontSize: 15 },
+  setName: { fontSize: 15, fontFamily: fonts.title, color: colors.text },
+  meta: { fontSize: 12, fontFamily: fonts.body, color: colors.sub },
 });

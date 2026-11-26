@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { colors } from '@/theme';
 import { useUpdate } from '@/update/UpdateContext';
@@ -18,7 +19,12 @@ export function UpdateButton() {
       style={({ pressed }) => [styles.btn, pressed && { opacity: 0.6 }]}
       accessibilityLabel={hasNew ? '새 버전 업데이트' : '업데이트 확인'}
     >
-      {busy ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={styles.btnIcon}>🔄</Text>}
+      {busy ? <ActivityIndicator size="small" color={colors.accent} /> : <Svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke={colors.accent} strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M20 11a8 8 0 0 0-14.3-4.9L4 8" />
+          <Path d="M4 3v5h5" />
+          <Path d="M4 13a8 8 0 0 0 14.3 4.9L20 16" />
+          <Path d="M20 21v-5h-5" />
+        </Svg>}
       {hasNew ? <View style={styles.dot} /> : null}
     </Pressable>
   );
@@ -72,7 +78,17 @@ export function VersionLine() {
 }
 
 const styles = StyleSheet.create({
-  btn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
+  btn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.shadow,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
   btnIcon: { fontSize: 22 },
   dot: {
     position: 'absolute',

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { TYPE_INFO } from '@/data/labels';
 import type { Card } from '@/data/types';
 import { photoUri } from '@/store/photos';
-import { CARD_RATIO, colors } from '@/theme';
+import { CARD_RATIO, colors, fonts } from '@/theme';
 import { CardBack } from './CardBack';
 
 /**
@@ -15,7 +15,7 @@ import { CardBack } from './CardBack';
  */
 export function CardFace({ card, width, owned, photo }: { card: Card; width: number; owned: boolean; photo?: string }) {
   const height = width * CARD_RATIO;
-  const radius = width * 0.055;
+  const radius = width * 0.09;
 
   if (photo) {
     return (
@@ -43,13 +43,13 @@ export function CardFace({ card, width, owned, photo }: { card: Card; width: num
 
 const styles = StyleSheet.create({
   owned: {
-    borderWidth: 3,
+    borderWidth: 4,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 6,
     gap: 6,
   },
-  ownedName: { fontWeight: '700', color: colors.text, textAlign: 'center' },
-  ownedHint: { color: colors.sub },
+  ownedName: { fontFamily: fonts.title, color: colors.text, textAlign: 'center' },
+  ownedHint: { color: colors.sub, fontFamily: fonts.body },
 });

@@ -1,3 +1,5 @@
+import { GowunDodum_400Regular } from '@expo-google-fonts/gowun-dodum';
+import { Jua_400Regular, useFonts } from '@expo-google-fonts/jua';
 import { reloadAppAsync } from 'expo';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -9,10 +11,12 @@ import { CelebrationProvider } from '@/celebrate/Celebration';
 import { UpdateButton } from '@/components/UpdateBanner';
 import { CollectionProvider } from '@/store/collection';
 import { WishlistProvider } from '@/store/wishlist';
-import { colors, isDark } from '@/theme';
+import { colors, fonts, isDark } from '@/theme';
 import { UpdateProvider } from '@/update/UpdateContext';
 
 export default function RootLayout() {
+  // 🎨 동글동글 글꼴 (주아 · 고운돋움). 못 불러와도 앱은 기본 글꼴로 계속 떠요.
+  const [loaded, error] = useFonts({ Jua_400Regular, GowunDodum_400Regular });
   // 🌙 폰 테마가 바뀌면 앱을 다시 불러와서 색을 맞춰요
   useEffect(() => {
     const sub = Appearance.addChangeListener(({ colorScheme }) => {
@@ -20,6 +24,8 @@ export default function RootLayout() {
     });
     return () => sub.remove();
   }, []);
+
+  if (!loaded && !error) return null;
 
   return (
     <SafeAreaProvider>
@@ -33,7 +39,7 @@ export default function RootLayout() {
                   headerStyle: { backgroundColor: colors.bg },
                   headerShadowVisible: false,
                   headerTintColor: colors.text,
-                  headerTitleStyle: { fontWeight: '700' },
+                  headerTitleStyle: { fontFamily: fonts.title, fontSize: 21 },
                   contentStyle: { backgroundColor: colors.bg },
                   // 다른 화면에서는 오른쪽 위에 (왼쪽은 뒤로 가기)
                   headerRight: () => <UpdateButton />,
